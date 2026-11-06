@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D CAD Model Viewer - Mechanical Part</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a24;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+        }
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            color: #4facfe;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #ccc;
+        }
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #aaa;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 12px;
+            pointer-events: none;
+        }
+    </style>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="info-panel">
+        <h1>Mô Hình Kỹ Thuật 3D</h1>
+        <p><strong>Kích thước tổng:</strong> 90 x 60 x 50 mm</p>
+        <p><strong>Độ cao đế:</strong> 20 mm | <strong>Lỗ khoan:</strong> Ø18 mm</p>
+        <p><strong>Rãnh đáy:</strong> 20x5 mm | <strong>Vòm khuyết mặt trước:</strong> R10 mm</p>
+    </div>
+
+    <div id="controls-hint">
+        🖱️ Chuột trái: Xoay 360° | Chuột phải: Di chuyển | Cuộn chuột: Phóng to / Thu nhỏ
+    </div>
+
+    <script>
+        // 1. Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1e1e28);
+
+        // 2. Camera Setup
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(120, 100, 140);
+
+        // 3. Renderer Setup
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // 4. OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 20, 0);
+
+        // 5. Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight1.position.set(100, 150, 80);
+        dirLight1.castShadow = true;
+        dirLight1.shadow.mapSize.width = 2048;
+        dirLight1.shadow.mapSize.height = 2048;
+        scene.add(dirLight1);
+
+        const dirLight2 = new THREE.DirectionalLight(0x3a7bd5, 0.4);
+        dirLight2.position.set(-100, -50, -100);
+        scene.add(dirLight2);
+
+        // 6. Helpers (Grid & Axis)
+        const gridHelper = new THREE.GridHelper(200, 20, 0x4facfe, 0x444455);
+        gridHelper.position.y = -0.1;
+        scene.add(gridHelper);
+
+        // 7. Construct 3D Geometry
+        function createModel() {
+            const group = new THREE.Group();
+
+            // Material
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x3b82f6,
+                roughness: 0.3,
+                metalness: 0.4,
+            });
+
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1 });
+
+            // --- A. BASE GEOMETRY (Dùng Shape Extrude) ---
+            const baseShape = new THREE.Shape();
+            // Vẽ biên dạng mặt cắt ngang X-Y của phần đế
+            // Tâm đặt tại giữa (X từ -45 đến 45, Y từ -30 đến 30)
+            const x0 = -45, x1 = 45;
+            const y0 = -30, y1 = 30;
+            
+            baseShape.moveTo(x0, y0);
+            baseShape.lineTo(x1, y0);
+            baseShape.lineTo(x1, y1);
+            
+            // Cắt khuyết phía trước (Y từ 10 đến 30, X từ -20 đến 20)
+            baseShape.lineTo(20, y1);
+            baseShape.lineTo(20, 10);
+            
+            // Vòm Bán kính R10 tại đỉnh rãnh khuyết
+            baseShape.absarc(0, 10, 10, 0, Math.PI, false);
+            
+            baseShape.lineTo(-20, 10);
+            baseShape.lineTo(-20, y1);
+            baseShape.lineTo(x0, y1);
+            baseShape.closePath();
+
+            const baseExtrudeSettings = { depth: 20, bevelEnabled: false };
+            const baseGeo = new THREE.ExtrudeGeometry(baseShape, baseExtrudeSettings);
+            baseGeo.rotateX(Math.PI / 2); // Xoay để extrude theo chiều đứng Z
+
+            const baseMesh = new THREE.Mesh(baseGeo, material);
+            baseMesh.position.y = 20;
+            baseMesh.castShadow = true;
+            baseMesh.receiveShadow = true;
+
+            // --- B. VÁCH ĐỨNG PHÍA SAU (BACK WALL) ---
+            const wallShape = new THREE.Shape();
+            // Hình chiếu X-Z của vách đứng
+            wallShape.moveTo(-30, 0);
+            wallShape.lineTo(30, 0);
+            wallShape.lineTo(30, 15);
+            wallShape.lineTo(10, 30);
+            wallShape.lineTo(-10, 30);
+            wallShape.lineTo(-30, 15);
+            wallShape.closePath();
+
+            // Lỗ khoét Ø18 (R9) ở giữa vách
+            const holePath = new THREE.Path();
+            holePath.absarc(0, 15, 9, 0, Math.PI * 2, true);
+            wallShape.holes.push(holePath);
+
+            const wallExtrudeSettings = { depth: 15, bevelEnabled: false };
+            const wallGeo = new THREE.ExtrudeGeometry(wallShape, wallExtrudeSettings);
+            
+            const wallMesh = new THREE.Mesh(wallGeo, material);
+            wallMesh.position.set(0, 20, -30);
+            wallMesh.castShadow = true;
+            wallMesh.receiveShadow = true;
+
+            // --- C. ĐÁY DƯỚI (Tạo rãnh chìm 20x5 mm ở đáy) ---
+            // Trừ rãnh đáy bằng cách tạo khối đế chính xác
+            const bottomCutoutGeo = new THREE.BoxGeometry(90.2, 5.1, 20);
+            const bottomCutoutMat = new THREE.MeshBasicMaterial({ visible: false });
+            const bottomCutoutMesh = new THREE.Mesh(bottomCutoutGeo, bottomCutoutMat);
+            bottomCutoutMesh.position.set(0, 2.5, -5);
+
+            group.add(baseMesh);
+            group.add(wallMesh);
+
+            // Nét dựng khung dây CAD (Edges Highlight)
+            [baseMesh, wallMesh].forEach(mesh => {
+                const edges = new THREE.EdgesGeometry(mesh.geometry);
+                const line = new THREE.LineSegments(edges, lineMaterial);
+                mesh.add(line);
+            });
+
+            // Căn chỉnh toàn bộ vật thể về tâm trọng trường
+            group.position.y = 0;
+            return group;
+        }
+
+        const model = createModel();
+        scene.add(model);
+
+        // 8. Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 9. Responsive Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

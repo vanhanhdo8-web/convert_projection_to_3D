@@ -1,0 +1,20 @@
+# File cấu hình chứa API Key cá nhân
+config.json
+
+# Kết quả xuất ra
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+
+# Repo ngoài (tham khảo), không thuộc ứng dụng
+CrossViewer/
+Ortho2CAD/
+
+# Ảnh thử
+test_grid.png

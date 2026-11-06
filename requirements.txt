@@ -1,0 +1,7 @@
+pillow>=10.0.0
+numpy>=1.24.0
+trimesh>=4.0.0
+shapely>=2.0.0
+mapbox-earcut>=1.0.1
+manifold3d>=2.5.0
+PySide6>=6.6.0

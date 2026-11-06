@@ -1,0 +1,80 @@
+{
+  "title": "Gá chạc lỗ tròn",
+  "units": "mm",
+  "info": [
+    [
+      "Dài x Rộng x Cao",
+      "65 x 28 x 27"
+    ],
+    [
+      "Chiều cao đế",
+      "12 mm"
+    ],
+    [
+      "Lỗ tròn bên trái",
+      "Ø13 mm (tâm cách mép 20 mm)"
+    ],
+    [
+      "Chiều dài bậc trên",
+      "32 mm"
+    ],
+    [
+      "Rãnh chữ U",
+      "Rộng 18 mm, sâu 14 mm"
+    ]
+  ],
+  "solids": [
+    {
+      "shape": "box",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        65,
+        28,
+        12
+      ]
+    },
+    {
+      "shape": "box",
+      "origin": [
+        33,
+        0,
+        12
+      ],
+      "size": [
+        32,
+        28,
+        15
+      ]
+    }
+  ],
+  "cuts": [
+    {
+      "shape": "cylinder",
+      "axis": "z",
+      "start": [
+        20,
+        14,
+        -1
+      ],
+      "length": 14,
+      "diameter": 13
+    },
+    {
+      "shape": "box",
+      "origin": [
+        51,
+        5,
+        12
+      ],
+      "size": [
+        15,
+        18,
+        16
+      ]
+    }
+  ]
+}

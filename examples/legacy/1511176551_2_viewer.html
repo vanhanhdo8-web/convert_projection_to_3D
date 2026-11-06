@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Hình 3D Bản Vẽ Kỹ Thuật Cơ Khí</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a24;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+        }
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(20, 20, 30, 0.85);
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+            max-width: 300px;
+        }
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #4facfe;
+        }
+        ul {
+            margin: 0;
+            padding-left: 18px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #cccccc;
+        }
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #aaa;
+            pointer-events: none;
+        }
+    </style>
+    <!-- Nhập thư viện Three.js và OrbitControls từ CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="info-panel">
+        <h2>Thông Số Chi Tiết (mm)</h2>
+        <ul>
+            <li><b>Dài x Rộng x Cao:</b> 65 x 28 x 27</li>
+            <li><b>Chiều cao đế:</b> 12 mm</li>
+            <li><b>Lỗ tròn bên trái:</b> Ø13 mm (Tâm cách mép 20 mm)</li>
+            <li><b>Chiều dài bậc trên:</b> 32 mm</li>
+            <li><b>Rãnh chữ U:</b> Rộng 18 mm, Sâu 14 mm</li>
+        </ul>
+    </div>
+
+    <div id="controls-hint">
+        Click chuột trái + kéo để XOAY | Chuột phải để DI CHUYỂN | Lăn chuột để PHÓNG TO/THU NHỎ
+    </div>
+
+    <script>
+        // 1. Khởi tạo Scene, Camera & Renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a24);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(80, 60, 90);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // 2. Control góc nhìn OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 0);
+
+        // 3. Ánh sáng (Lighting)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight1.position.set(50, 80, 60);
+        dirLight1.castShadow = true;
+        dirLight1.shadow.mapSize.width = 2048;
+        dirLight1.shadow.mapSize.height = 2048;
+        scene.add(dirLight1);
+
+        const dirLight2 = new THREE.DirectionalLight(0x4facfe, 0.3);
+        dirLight2.position.set(-50, -30, -50);
+        scene.add(dirLight2);
+
+        // 4. Lưới nền và Trục tọa độ
+        const gridHelper = new THREE.GridHelper(200, 40, 0x4facfe, 0x333344);
+        gridHelper.position.y = -13.5;
+        scene.add(gridHelper);
+
+        // 5. Dựng hình vật thể 3D (Tạo Shape & Extrude)
+        const createPartGeometry = () => {
+            const group = new THREE.Group();
+
+            // Vật liệu kim loại xám/xanh
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x3a7bd5,
+                metalness: 0.4,
+                roughness: 0.3,
+            });
+
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 1.5 });
+
+            // A. ĐẾ DƯỚI (Có lỗ tròn Ø13)
+            const baseShape = new THREE.Shape();
+            baseShape.moveTo(0, 0);
+            baseShape.lineTo(65, 0);
+            baseShape.lineTo(65, 28);
+            baseShape.lineTo(0, 28);
+            baseShape.closePath();
+
+            // Đường tròn lỗ
+            const holePath = new THREE.Path();
+            holePath.absarc(20, 14, 6.5, 0, Math.PI * 2, true);
+            baseShape.holes.push(holePath);
+
+            const baseExtrudeSettings = { depth: 12, bevelEnabled: false };
+            const baseGeo = new THREE.ExtrudeGeometry(baseShape, baseExtrudeSettings);
+            const baseMesh = new THREE.Mesh(baseGeo, material);
+            baseMesh.castShadow = true;
+            baseMesh.receiveShadow = true;
+
+            // Nét viền cho đế
+            const baseEdges = new THREE.EdgesGeometry(baseGeo);
+            const baseLine = new THREE.LineSegments(baseEdges, lineMaterial);
+            baseMesh.add(baseLine);
+
+            group.add(baseMesh);
+
+            // B. BẬC TRÊN (Có rãnh chữ U)
+            const topShape = new THREE.Shape();
+            // Khối 32x28 tại X từ 33->65, Y từ 0->28
+            topShape.moveTo(33, 0);
+            topShape.lineTo(65, 0);
+            topShape.lineTo(65, 5);  // Bắt đầu rãnh chữ U
+            topShape.lineTo(51, 5);  // Sâu 14mm (65 - 14 = 51)
+            topShape.lineTo(51, 23); // Rộng 18mm (5 + 18 = 23)
+            topShape.lineTo(65, 23);
+            topShape.lineTo(65, 28);
+            topShape.lineTo(33, 28);
+            topShape.closePath();
+
+            const topExtrudeSettings = { depth: 15, bevelEnabled: false };
+            const topGeo = new THREE.ExtrudeGeometry(topShape, topExtrudeSettings);
+            const topMesh = new THREE.Mesh(topGeo, material);
+            topMesh.position.z = 12; // Đặt đè lên mặt đế
+            topMesh.castShadow = true;
+            topMesh.receiveShadow = true;
+
+            // Nét viền cho bậc trên
+            const topEdges = new THREE.EdgesGeometry(topGeo);
+            const topLine = new THREE.LineSegments(topEdges, lineMaterial);
+            topMesh.add(topLine);
+
+            group.add(topMesh);
+
+            // Xoay và căn giữa vật thể về tâm gốc tọa độ (0,0,0)
+            group.rotation.x = -Math.PI / 2; // Đưa trục Z lên làm chiều cao
+            group.position.set(-65 / 2, -27 / 2, 28 / 2);
+
+            return group;
+        };
+
+        const part = createPartGeometry();
+        scene.add(part);
+
+        // 6. Xử lý Resize màn hình
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 7. Vòng lặp Render (Animation Loop)
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
